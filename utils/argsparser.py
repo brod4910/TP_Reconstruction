@@ -7,6 +7,8 @@ def CreateArgsParser():
                     help='number of epochs to train (default: 40)')
     parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
                     help='learning rate (default: 0.01)')
+    parser.add_argument('--batch-size', type=int, default=12, metavar='LR',
+                    help='batch size (default: 12)')
     parser.add_argument('--log-interval', type=int, default=1000, metavar='N',
                     help='how many batches to wait before logging training status')
     parser.add_argument('--resize', required= True, type=int, default=None, 
