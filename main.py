@@ -1,7 +1,12 @@
-from unet_model import UNet
-import TransparentDataset
-from argsparser import CreateArgsParser
+# local imports
+from unet.unet_model import UNet
+from data import TransparentDataset
 
+# python imports
+from utils.argsparser import CreateArgsParser
+import shutil
+
+# library imports
 import torch
 from torchvision import transforms
 from PIL import Image
@@ -47,10 +52,25 @@ def main(args):
     optimizer = torch.optim.Adam(unet.parameters(), lr=0.1, betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
     criterion = torch.nn.MSELoss().to(device)
 
+    best_loss = 0
+
     for epoch in range(1, args.epochs + 1):
         train(unet, optimizer, criterion, device, train_loader, epoch, args.log_interval)
-        test(unet, device, val_loader, epoch, args.log_interval)
+        test_loss = test(unet, device, train_loader, epoch, args.log_interval)
 
+        if test_loss < best_loss:
+            best_prec1 = test_loss
+            is_best = True
+
+        # save the model every epoch
+        save_checkpoint({
+            'epoch' : epoch,
+            'model_state_dict': model.state_dict(),
+            'optimizer' : optimizer.state_dict(),
+            'loss' : test_loss
+            }, is_best)
+
+        is_best = False
 
 def train(model, optimizer, criterion, device, train_loader, epoch, log_interval):
 
@@ -64,10 +84,6 @@ def train(model, optimizer, criterion, device, train_loader, epoch, log_interval
 
         output = model(inputs)                     # Forward pass
         loss = criterion(output, targets)      # Compute loss function
-
-        # print("inputs:", inputs)
-        # print("targets:", targets)
-        # print("ouputs:", output)
 
         optimizer.zero_grad()
         loss.backward()
@@ -108,6 +124,8 @@ def test(model, device, val_loader, epoch, log_interval):
             del inputs, targets
     print('\nTest set: Average loss: {:.6f}\n'.format(test_loss/len(val_loader.dataset)))
 
+    return test_loss
+
 
 def to_numpy_arr(tensor):
     img = tensor.detach().numpy()
@@ -122,10 +140,15 @@ def scale(X, x_min, x_max):
     denom = 1 if denom == 0 else denom
     return x_min + nom/denom 
 
+def save_checkpoint(state, is_best, epoch, filename='checkpoint.pth'):
+    torch.save(state, filename)
+    if is_best:
+        shutil.copyfile(filename, 'model_best_{}.pth'.format(epoch))
+
 if __name__ == '__main__':
     args = CreateArgsParser().parse_args()
     main(args)
 
-# python main.py --resize 572 --train-csv ./data/val_data.csv --val-csv ./data/val_data.csv --train-input-dir ./val2017 --train-gt-dir ./val2017_gt --val-input-dir ./val2017 --val-gt-dir ./val2017_gt --log-interval 1
+# python main.py --resize 572 --train-csv ./data/train_data.csv --val-csv ./data/val_data.csv --train-input-dir /scratch/kingspeak/serial/u0853593/images/reconstruction/train2017 --train-gt-dir /scratch/kingspeak/serial/u0853593/images/reconstruction/train2017_gt --val-input-dir /scratch/kingspeak/serial/u0853593/images/reconstruction/val2017 --val-gt-dir /scratch/kingspeak/serial/u0853593/images/reconstruction/val2017_gt --log-interval 500
 
 
