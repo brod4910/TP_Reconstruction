@@ -5,6 +5,7 @@ from data import TransparentDataset
 # python imports
 from utils.argsparser import CreateArgsParser
 import shutil
+import sys
 
 # library imports
 import torch
@@ -35,17 +36,17 @@ def main(args):
 
     train_loader = torch.utils.data.DataLoader(
     train_dataset, 
-    batch_size= 1, 
+    batch_size= args.batch_size, 
     shuffle= True, 
-    num_workers= 4,
+    num_workers= 6,
     pin_memory= True
     )
 
     val_loader = torch.utils.data.DataLoader(
     val_dataset,
-    batch_size= 1, 
+    batch_size= args.batch_size, 
     shuffle= True, 
-    num_workers= 4,
+    num_workers= 6,
     pin_memory= True
     )
 
@@ -96,6 +97,7 @@ def train(model, optimizer, criterion, device, train_loader, epoch, log_interval
                 epoch, batch_idx * len(inputs), len(train_loader.dataset),
                 100. * batch_idx / len(train_loader.dataset), loss.item()))
             print('outputs:', output)
+            sys.stdout.flush()
 
         del inputs, targets, loss, output
 
@@ -120,9 +122,10 @@ def test(model, device, val_loader, epoch, log_interval):
                 # img = to_numpy_arr(output)
                 # img = scale(img, 0, 1)
                 # plt.imsave('./{}_epoch_{}.png'.format(img_name[0][:-4], epoch), img)
+                sys.stdout.flush()
 
             del inputs, targets
-    print('\nTest set: Average loss: {:.6f}\n'.format(test_loss/len(val_loader.dataset)))
+    print('\nTest set: Average loss: {:.6f}\n'.format(test_loss/len(val_loader)))
 
     return test_loss
 
