@@ -5,7 +5,6 @@ from data import TransparentDataset
 # python imports
 from utils.argsparser import CreateArgsParser
 import shutil
-import sys
 
 # library imports
 import torch
@@ -66,7 +65,7 @@ def main(args):
         # save the model every epoch
         save_checkpoint({
             'epoch' : epoch,
-            'model_state_dict': model.state_dict(),
+            'model_state_dict': unet.state_dict(),
             'optimizer' : optimizer.state_dict(),
             'loss' : test_loss
             }, is_best)
@@ -95,9 +94,8 @@ def train(model, optimizer, criterion, device, train_loader, epoch, log_interval
         if (batch_idx + 1) % log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(inputs), len(train_loader.dataset),
-                100. * batch_idx / len(train_loader.dataset), loss.item()))
-            print('outputs:', output)
-            sys.stdout.flush()
+                100. * batch_idx / len(train_loader.dataset), loss.item()), flush= True)
+            print('outputs:', output, flush= True)
 
         del inputs, targets, loss, output
 
@@ -118,14 +116,13 @@ def test(model, device, val_loader, epoch, log_interval):
             test_loss += F.mse_loss(output, targets).item()
 
             if (batch_idx + 1) % log_interval == 0:
-                print('outputs:', output)
+                print('outputs:', output, flush= True)
                 # img = to_numpy_arr(output)
                 # img = scale(img, 0, 1)
                 # plt.imsave('./{}_epoch_{}.png'.format(img_name[0][:-4], epoch), img)
-                sys.stdout.flush()
 
             del inputs, targets
-    print('\nTest set: Average loss: {:.6f}\n'.format(test_loss/len(val_loader)))
+    print('\nTest set: Average loss: {:.6f}\n'.format(test_loss/len(val_loader)), flush= True)
 
     return test_loss
 
