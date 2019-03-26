@@ -52,14 +52,14 @@ def main(args):
     optimizer = torch.optim.Adam(unet.parameters(), lr=0.1, betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
     criterion = torch.nn.MSELoss().to(device)
 
-    best_loss = 0
+    best_loss = float('inf')
 
     for epoch in range(1, args.epochs + 1):
         train(unet, optimizer, criterion, device, train_loader, epoch, args.log_interval)
         test_loss = test(unet, device, train_loader, epoch, args.log_interval)
 
         if test_loss < best_loss:
-            best_prec1 = test_loss
+            best_loss = test_loss
             is_best = True
 
         # save the model every epoch
@@ -116,12 +116,12 @@ def test(model, device, val_loader, epoch, log_interval):
             test_loss += F.mse_loss(output, targets).item()
 
             if (batch_idx + 1) % log_interval == 0:
+                print('Test Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                epoch, batch_idx * len(inputs), len(val_loader.dataset),
+                100. * batch_idx / len(val_loader.dataset), test_loss), flush= True)
                 print('outputs:', output, flush= True)
-                # img = to_numpy_arr(output)
-                # img = scale(img, 0, 1)
-                # plt.imsave('./{}_epoch_{}.png'.format(img_name[0][:-4], epoch), img)
 
-            del inputs, targets
+            del inputs, targets, output
     print('\nTest set: Average loss: {:.6f}\n'.format(test_loss/len(val_loader)), flush= True)
 
     return test_loss
@@ -140,10 +140,10 @@ def scale(X, x_min, x_max):
     denom = 1 if denom == 0 else denom
     return x_min + nom/denom 
 
-def save_checkpoint(state, is_best, epoch, filename='checkpoint.pth'):
+def save_checkpoint(state, is_best, filename='checkpoint.pth'):
     torch.save(state, filename)
     if is_best:
-        shutil.copyfile(filename, 'model_best_{}.pth'.format(epoch))
+        shutil.copyfile(filename, 'model_best_{}.pth'.format(state['epoch']))
 
 if __name__ == '__main__':
     args = CreateArgsParser().parse_args()
