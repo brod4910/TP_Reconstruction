@@ -1,2 +1,6 @@
 val2017/
 val2017_gt/
+*.pc
+*.pyc
+*.pyo
+__pycache__
