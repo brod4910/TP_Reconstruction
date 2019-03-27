@@ -13,16 +13,20 @@ def CreateArgsParser():
                     help='how many batches to wait before logging training status')
     parser.add_argument('--resize', required= True, type=int, default=None, 
                     help='dimensions of both height and width to be resized')
-    parser.add_argument('--train-csv', required= True, 
+    parser.add_argument('--train-csv',
                     help='path to the img names for input images and gt images (names should match)')
-    parser.add_argument('--val-csv', required= True, 
+    parser.add_argument('--val-csv',
                     help='path to the img names for input images and gt images (names should match)')
-    parser.add_argument('--train-input-dir', required= True, 
+    parser.add_argument('--train-input-dir',
                     help='path to training input image')
-    parser.add_argument('--train-gt-dir', required= True, 
+    parser.add_argument('--train-gt-dir', 
                     help='path to training ground truth images')
-    parser.add_argument('--val-input-dir', required= True, 
+    parser.add_argument('--val-input-dir',
                     help='path to validation input image')
-    parser.add_argument('--val-gt-dir', required= True, 
+    parser.add_argument('--val-gt-dir',
                     help='path to validation ground truth images')
+    parser.add_argument('--pred-img', default=None, metavar='N',
+                    help='Path to image of prediction (default: None)')
+    parser.add_argument('--checkpoint', default=None, metavar='N',
+                    help='Path of the checkpoint file (default: None)')
     return parser

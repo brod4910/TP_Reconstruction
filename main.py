@@ -14,7 +14,7 @@ import torch.nn.functional as F
 from PIL import Image
 import numpy as np
 import matplotlib
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 def main(args):
@@ -56,7 +56,7 @@ def main(args):
 
     for epoch in range(1, args.epochs + 1):
         train(unet, optimizer, criterion, device, train_loader, epoch, args.log_interval)
-        test_loss = test(unet, device, train_loader, epoch, args.log_interval)
+        test_loss = test(unet, device, val_loader, epoch, args.log_interval)
 
         if test_loss < best_loss:
             best_loss = test_loss
@@ -127,6 +127,32 @@ def test(model, device, val_loader, epoch, log_interval):
     return test_loss
 
 
+def predict(checkpoint_file, img):
+    use_cuda = torch.cuda.is_available()
+    device = torch.device("cuda" if use_cuda else "cpu")
+    checkpoint = torch.load(checkpoint_file)
+
+    print(checkpoint)
+
+    unet = UNet(3, 3)
+    unet = unet.to(device)
+    unet.load_state_dict(checkpoint['model_state_dict'])
+    unet.eval()
+
+    transform = transforms.Compose([transforms.Resize((args.resize, args.resize)),
+    transforms.ToTensor()])
+
+    img = Image.open(img)
+    img = transform(img)
+    img = img.expand(1, -1, -1, -1)
+
+    output = unet(img)
+    img = to_numpy_arr(output)
+    print(output)
+
+    plt.imshow(img)
+    plt.show()
+
 def to_numpy_arr(tensor):
     img = tensor.detach().numpy()
     img = img.squeeze()
@@ -147,8 +173,12 @@ def save_checkpoint(state, is_best, filename='checkpoint.pth'):
 
 if __name__ == '__main__':
     args = CreateArgsParser().parse_args()
-    main(args)
+    if args.pred_img and args.checkpoint:
+        predict(args.checkpoint, args.pred_img)
+    else:
+        main(args)
 
 # python main.py --resize 572 --train-csv ./data/train_data.csv --val-csv ./data/val_data.csv --train-input-dir /scratch/kingspeak/serial/u0853593/images/reconstruction/train2017 --train-gt-dir /scratch/kingspeak/serial/u0853593/images/reconstruction/train2017_gt --val-input-dir /scratch/kingspeak/serial/u0853593/images/reconstruction/val2017 --val-gt-dir /scratch/kingspeak/serial/u0853593/images/reconstruction/val2017_gt --log-interval 500
+# python main.py --resize 572 --pred-img ./val2017/000000000139.jpg --checkpoint ./model_best_1.pth
 
 
