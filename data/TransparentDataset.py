@@ -6,20 +6,11 @@ from torchvision import transforms, utils
 from PIL import Image
 
 '''
-    Dataset for the lensless images.
-    The csv file must contain the relative path to the images
-    The root dir must be the top level directory of where all of the images.
-
-    Bare transform is a list of image transformations. These transformations will be taken as is, if and only if
-    extra_transform is None. If extra_transform is not none then bare_transform MUST contain a None entry where the
-    extra transforms will be placed. 
-
-    The extra transforms are a list of more image transformations. These transformations are randomly chosen. The
-    random selection either contains one of the transformations or all of them.
 '''
 class TransparentDataset(Dataset):
-    def __init__(self, csv_file, input_dir, gt_dir, input_transforms=None, label_transforms= None):
+    def __init__(self, csv_file, input_dir, gt_dir, sample, input_transforms=None, label_transforms= None):
         self.csv_data = pd.read_csv(csv_file)
+        self.csv_data = self.csv_data.sample(n= sample)
         self.input_dir = input_dir
         self.gt_dir = gt_dir
         self.input_transforms = input_transforms

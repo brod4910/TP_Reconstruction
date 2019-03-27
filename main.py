@@ -14,8 +14,9 @@ import torch.nn.functional as F
 from PIL import Image
 import numpy as np
 import matplotlib
-# matplotlib.use('TkAgg')
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
+np.set_printoptions(threshold=np.inf)
 
 def main(args):
     use_cuda = torch.cuda.is_available()
@@ -30,8 +31,8 @@ def main(args):
     label_transform = transforms.Compose([transforms.Resize((388, 388)),
         transforms.ToTensor()])
 
-    train_dataset = TransparentDataset.TransparentDataset(args.train_csv, args.train_input_dir, args.train_gt_dir, input_transforms=input_transform, label_transforms= label_transform)
-    val_dataset = TransparentDataset.TransparentDataset(args.val_csv, args.val_input_dir, args.val_gt_dir, input_transforms=input_transform, label_transforms= label_transform)
+    train_dataset = TransparentDataset.TransparentDataset(args.train_csv, args.train_input_dir, args.train_gt_dir, 2, input_transforms=input_transform, label_transforms= label_transform)
+    val_dataset = TransparentDataset.TransparentDataset(args.val_csv, args.val_input_dir, args.val_gt_dir, 2, input_transforms=input_transform, label_transforms= label_transform)
 
     train_loader = torch.utils.data.DataLoader(
     train_dataset, 
@@ -130,7 +131,7 @@ def test(model, device, val_loader, epoch, log_interval):
 def predict(checkpoint_file, img):
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
-    checkpoint = torch.load(checkpoint_file)
+    checkpoint = torch.load(checkpoint_file, map_location=device)
 
     print(checkpoint)
 
@@ -148,7 +149,7 @@ def predict(checkpoint_file, img):
 
     output = unet(img)
     img = to_numpy_arr(output)
-    print(output)
+    print(img)
 
     plt.imshow(img)
     plt.show()
