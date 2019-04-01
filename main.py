@@ -22,7 +22,7 @@ def main(args):
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
-    unet = UNet(3, 3)
+    unet = UNet(3, 1)
     unet = unet.to(device)
 
     input_transform = transforms.Compose([transforms.Resize((args.resize, args.resize)),
@@ -31,8 +31,8 @@ def main(args):
     label_transform = transforms.Compose([transforms.Resize((388, 388)),
         transforms.ToTensor()])
 
-    train_dataset = TransparentDataset.TransparentDataset(args.train_csv, args.train_input_dir, args.train_gt_dir, 2, input_transforms=input_transform, label_transforms= label_transform)
-    val_dataset = TransparentDataset.TransparentDataset(args.val_csv, args.val_input_dir, args.val_gt_dir, 2, input_transforms=input_transform, label_transforms= label_transform)
+    train_dataset = TransparentDataset.TransparentDataset(args.train_csv, args.train_input_dir, args.train_gt_dir, input_transforms=input_transform, label_transforms= label_transform)
+    val_dataset = TransparentDataset.TransparentDataset(args.val_csv, args.val_input_dir, args.val_gt_dir, input_transforms=input_transform, label_transforms= label_transform)
 
     train_loader = torch.utils.data.DataLoader(
     train_dataset, 
@@ -128,12 +128,12 @@ def test(model, device, val_loader, epoch, log_interval):
     return test_loss
 
 
-def predict(checkpoint_file, img):
+def predict(checkpoint_file, args):
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
     checkpoint = torch.load(checkpoint_file, map_location=device)
 
-    print(checkpoint)
+    # print(checkpoint)
 
     unet = UNet(3, 3)
     unet = unet.to(device)
@@ -141,18 +141,45 @@ def predict(checkpoint_file, img):
     unet.eval()
 
     transform = transforms.Compose([transforms.Resize((args.resize, args.resize)),
-    transforms.ToTensor()])
+            transforms.ToTensor()])
 
-    img = Image.open(img)
-    img = transform(img)
-    img = img.expand(1, -1, -1, -1)
+    if args.pred_img:
+        img = Image.open(args.pred_img)
+        img = transform(img)
+        img = img.expand(1, -1, -1, -1)
 
-    output = unet(img)
-    img = to_numpy_arr(output)
-    print(img)
+        output = unet(img)
+        img = to_pil_img(output)
+        plt.imshow(img)
+        plt.show()
+    else:
+        val_dataset = TransparentDataset.TransparentDataset(args.val_csv, args.val_input_dir, args.val_gt_dir, 500, input_transforms=transform, pred= 'yes')
 
-    plt.imshow(img)
-    plt.show()
+        val_loader = torch.utils.data.DataLoader(
+            val_dataset,
+            batch_size= args.batch_size, 
+            shuffle= True, 
+            num_workers= 2,
+            pin_memory= True
+            )
+        with torch.no_grad():
+            for batch_idx, (inputs, img_name) in enumerate(val_loader):
+                output = unet(inputs)
+                img = to_pil_img(output)
+
+                if batch_idx == 0:
+                    image = plt.imshow(img)
+                else:
+                    image.set_data(img)
+
+                plt.draw()
+                plt.pause(2)
+                print(batch_idx, img_name)
+
+def to_pil_img(tensor):
+    pil = transforms.ToPILImage()
+    img = pil(tensor.squeeze())
+    return img
 
 def to_numpy_arr(tensor):
     img = tensor.detach().numpy()
@@ -174,12 +201,16 @@ def save_checkpoint(state, is_best, filename='checkpoint.pth'):
 
 if __name__ == '__main__':
     args = CreateArgsParser().parse_args()
-    if args.pred_img and args.checkpoint:
-        predict(args.checkpoint, args.pred_img)
+    if args.val_input_dir is None:
+        args.val_input_dir = args.train_input_dir
+        args.val_gt_dir = args.train_gt_dir
+    if args.checkpoint:
+        predict(args.checkpoint, args)
     else:
         main(args)
 
 # python main.py --resize 572 --train-csv ./data/train_data.csv --val-csv ./data/val_data.csv --train-input-dir /scratch/kingspeak/serial/u0853593/images/reconstruction/train2017 --train-gt-dir /scratch/kingspeak/serial/u0853593/images/reconstruction/train2017_gt --val-input-dir /scratch/kingspeak/serial/u0853593/images/reconstruction/val2017 --val-gt-dir /scratch/kingspeak/serial/u0853593/images/reconstruction/val2017_gt --log-interval 500
+# python main.py --resize 572 --train-csv ./data/mnist_train.csv --val-csv ./data/mnist_val.csv --train-input-dir ./tpmnist_avg --train-gt-dir ./mnist_gt --log-interval 500
 # python main.py --resize 572 --pred-img ./val2017/000000000139.jpg --checkpoint ./model_best_1.pth
 
 
