@@ -20,7 +20,7 @@ class UNet(nn.Module):
         self.down8 = DoubleConv(256, 128)
         self.up4 = TransposeConv(128, 64)
         self.down9 = DoubleConv(128, 64)
-        self.out = SingleConv(64, out_chans, kernel= (1, 1))
+        self.out = SingleConv(64, out_chans, kernel= (1, 1), activation= 'sigmoid')
 
         self.down_layers = [self.down1, self.pool1, 
         self.down2, self.pool2, 

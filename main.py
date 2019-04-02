@@ -1,6 +1,7 @@
 # local imports
 from unet.unet_model import UNet
 from data import TransparentDataset
+import pytorch_ssim
 
 # python imports
 from utils.argsparser import CreateArgsParser
@@ -51,7 +52,9 @@ def main(args):
     )
 
     optimizer = torch.optim.Adam(unet.parameters(), lr=0.1, betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
+
     criterion = torch.nn.MSELoss().to(device)
+    # criterion = pytorch_ssim.SSIM()
 
     best_loss = float('inf')
 
@@ -135,7 +138,7 @@ def predict(checkpoint_file, args):
 
     # print(checkpoint)
 
-    unet = UNet(3, 3)
+    unet = UNet(3, 1)
     unet = unet.to(device)
     unet.load_state_dict(checkpoint['model_state_dict'])
     unet.eval()
@@ -211,6 +214,6 @@ if __name__ == '__main__':
 
 # python main.py --resize 572 --train-csv ./data/train_data.csv --val-csv ./data/val_data.csv --train-input-dir /scratch/kingspeak/serial/u0853593/images/reconstruction/train2017 --train-gt-dir /scratch/kingspeak/serial/u0853593/images/reconstruction/train2017_gt --val-input-dir /scratch/kingspeak/serial/u0853593/images/reconstruction/val2017 --val-gt-dir /scratch/kingspeak/serial/u0853593/images/reconstruction/val2017_gt --log-interval 500
 # python main.py --resize 572 --train-csv ./data/mnist_train.csv --val-csv ./data/mnist_val.csv --train-input-dir ./tpmnist_avg --train-gt-dir ./mnist_gt --log-interval 500
-# python main.py --resize 572 --pred-img ./val2017/000000000139.jpg --checkpoint ./model_best_1.pth
+# python main.py --resize 572 --pred-img ./tpmnist_avg/0/13238.jpg --checkpoint ./model_best_1.pth
 
 

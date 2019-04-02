@@ -6,3 +6,5 @@ val2017_gt/
 __pycache__
 tpmnist_avg/
 mnist_gt/
+pytorch_ssim/
+tp_cifar_avg/

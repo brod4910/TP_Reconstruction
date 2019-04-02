@@ -11,12 +11,16 @@ class DoubleConv(nn.Module):
         return y
 
 class SingleConv(nn.Module):
-    def __init__(self, in_chans, out_chans, kernel):
+    def __init__(self, in_chans, out_chans, kernel, activation= 'relu'):
         super(SingleConv, self).__init__()
         self.in_chans = in_chans
         self.out_chans = out_chans
-        self.layer = nn.Sequential(nn.Conv2d(in_channels= in_chans, out_channels= out_chans, kernel_size= kernel), 
-            nn.BatchNorm2d(out_chans), nn.ReLU(inplace= True))
+        if activation == 'relu':
+            self.layer = nn.Sequential(nn.Conv2d(in_channels= in_chans, out_channels= out_chans, kernel_size= kernel), 
+                nn.BatchNorm2d(out_chans), nn.ReLU(inplace= True))
+        if activation == 'sigmoid':
+            self.layer = nn.Sequential(nn.Conv2d(in_channels= in_chans, out_channels= out_chans, kernel_size= kernel), 
+                nn.BatchNorm2d(out_chans), nn.Sigmoid(inplace= True))
 
     def forward(self, inputs):
         y = self.layer(inputs)
