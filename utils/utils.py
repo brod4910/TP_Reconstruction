@@ -1,3 +1,6 @@
+# local imports
+from reconstruction.unet.unet_sections import *
+
 # python imports
 import os
 import shutil
@@ -96,7 +99,7 @@ def test(model, device, val_loader, epoch, log_interval, loss_fn= 'mse'):
                 print('outputs:', output, flush= True)
 
             del inputs, targets, output
-    print('\nTest set: Average loss: {:.6f}\tCorrect: {}/{} ({:.6f})\n'.format(test_loss/len(batch_idx+1), correct, 
+    print('\nTest set: Average loss: {:.6f}\tCorrect: {}/{} ({:.6f})\n'.format(test_loss/batch_idx+1, correct, 
                 len(val_loader.dataset), correct/len(val_loader.dataset)), flush= True)
 
     return test_loss
@@ -185,6 +188,56 @@ def create_model(cfg):
 
             linear_layers += [torch.nn.Linear(**kwargs)]
     return torch.nn.Sequential(*feature_layers), torch.nn.Sequential(*linear_layers)
+
+def create_unet(cfg):
+    config = configparser.ConfigParser()
+    config.read(cfg)
+    curr_section = None
+    down_layers = []
+    up_layers = []
+
+    for section in config.sections():
+        kwargs = {}
+        if section == 'down_layers':
+            curr_section = section
+            continue
+        elif section == 'up_layers':
+            curr_section = section
+            continue
+
+        if curr_section == 'down_layers':
+            if 'down' in section:
+                down = config[section]
+                for param in down:
+                    kwargs[param] = int(down[param])
+                print(kwargs)
+                down_layers += [DoubleConv(**kwargs)]
+            elif 'maxpool' in section:
+                pool = config[section]
+                for param in pool:
+                    kwargs[param] = int(pool[param])
+                down_layers += [MaxPool(**kwargs)]
+        elif curr_section == 'up_layers':
+            if 'down' in section:
+                down = config[section]
+                for param in down:
+                    kwargs[param] = int(down[param])
+                up_layers += [DoubleConv(**kwargs)]
+            elif 'up' in section:
+                up = config[section]
+                for param in up:
+                    kwargs[param] = int(up[param])
+                up_layers += [TransposeConv(**kwargs)]
+            elif 'singleconv' in section:
+                single = config[section]
+                for param in single:
+                    try:
+                        kwargs[param] = int(single[param])
+                    except Exception as e:
+                        kwargs[param] = single[param]
+                up_layers += [SingleConv(**kwargs)]
+
+    return down_layers, up_layers
 
 def to_pil_img(tensor):
     pil = transforms.ToPILImage()

@@ -2,24 +2,24 @@ import torch
 import torch.nn as nn
 
 class DoubleConv(nn.Module):
-    def __init__(self, in_chans, out_chans, kernel= (3, 3)):
+    def __init__(self, in_chans, out_chans, kernel= (3, 3), padding= 0):
         super(DoubleConv, self).__init__()
-        self.layers = nn.Sequential(SingleConv(in_chans, out_chans, kernel), SingleConv(out_chans, out_chans, kernel))
+        self.layers = nn.Sequential(SingleConv(in_chans, out_chans, kernel, padding), SingleConv(out_chans, out_chans, kernel, padding))
 
     def forward(self, inputs):
         y = self.layers(inputs)
         return y
 
 class SingleConv(nn.Module):
-    def __init__(self, in_chans, out_chans, kernel, activation= 'relu'):
+    def __init__(self, in_chans, out_chans, kernel, padding, activation= 'relu'):
         super(SingleConv, self).__init__()
         self.in_chans = in_chans
         self.out_chans = out_chans
         if activation == 'relu':
-            self.layer = nn.Sequential(nn.Conv2d(in_channels= in_chans, out_channels= out_chans, kernel_size= kernel), 
+            self.layer = nn.Sequential(nn.Conv2d(in_channels= in_chans, out_channels= out_chans, kernel_size= kernel, padding= padding), 
                 nn.BatchNorm2d(out_chans), nn.ReLU(inplace= True))
         if activation == 'sigmoid':
-            self.layer = nn.Sequential(nn.Conv2d(in_channels= in_chans, out_channels= out_chans, kernel_size= kernel), 
+            self.layer = nn.Sequential(nn.Conv2d(in_channels= in_chans, out_channels= out_chans, kernel_size= kernel, padding= padding), 
                 nn.BatchNorm2d(out_chans), nn.Sigmoid())
 
     def forward(self, inputs):

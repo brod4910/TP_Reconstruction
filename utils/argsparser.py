@@ -29,6 +29,8 @@ def ArgsParserRecon():
                     help='Path to image of prediction (default: None)')
     parser.add_argument('--checkpoint', default=None, metavar='N',
                     help='Path of the checkpoint file (default: None)')
+    parser.add_argument('--cfg-file', required= True,
+                    help='CSV file path for training images and labels')
     return parser
 
 def ArgsParserClass():
