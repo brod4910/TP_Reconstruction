@@ -1,7 +1,7 @@
 import argparse
 
 def ArgsParserRecon():
-    parser = argparse.ArgumentParser(description='Lensless Camera Pytorch')
+    parser = argparse.ArgumentParser(description='Transparent Camera Reconstruction Pytorch')
 
     parser.add_argument('--epochs', type=int, default=40, metavar='N',
                     help='number of epochs to train (default: 40)')
@@ -32,7 +32,7 @@ def ArgsParserRecon():
     return parser
 
 def ArgsParserClass():
-    parser = argparse.ArgumentParser(description='Lensless Camera Pytorch')
+    parser = argparse.ArgumentParser(description='Transparent Camera Classification Pytorch')
 
     parser.add_argument('--epochs', type=int, default=40, metavar='N',
                     help='number of epochs to train (default: 40)')
