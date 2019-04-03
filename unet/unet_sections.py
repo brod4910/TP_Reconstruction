@@ -20,7 +20,7 @@ class SingleConv(nn.Module):
                 nn.BatchNorm2d(out_chans), nn.ReLU(inplace= True))
         if activation == 'sigmoid':
             self.layer = nn.Sequential(nn.Conv2d(in_channels= in_chans, out_channels= out_chans, kernel_size= kernel), 
-                nn.BatchNorm2d(out_chans), nn.Sigmoid(inplace= True))
+                nn.BatchNorm2d(out_chans), nn.Sigmoid())
 
     def forward(self, inputs):
         y = self.layer(inputs)

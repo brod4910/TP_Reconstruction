@@ -1,10 +1,10 @@
 # local imports
 from unet.unet_model import UNet
 from data import TransparentDataset
-import pytorch_ssim
+from utils.utils import to_pil_img, save_checkpoint
+from utils.argsparser import CreateArgsParser
 
 # python imports
-from utils.argsparser import CreateArgsParser
 import shutil
 
 # library imports
@@ -12,7 +12,6 @@ import torch
 from torchvision import transforms
 from PIL import Image
 import torch.nn.functional as F
-from PIL import Image
 import numpy as np
 import matplotlib
 matplotlib.use('TkAgg')
@@ -178,29 +177,6 @@ def predict(checkpoint_file, args):
                 plt.draw()
                 plt.pause(2)
                 print(batch_idx, img_name)
-
-def to_pil_img(tensor):
-    pil = transforms.ToPILImage()
-    img = pil(tensor.squeeze())
-    return img
-
-def to_numpy_arr(tensor):
-    img = tensor.detach().numpy()
-    img = img.squeeze()
-    img_size = img.shape
-    img = img.reshape((img_size[1], img_size[2], img_size[0]))
-    return img
-
-def scale(X, x_min, x_max):
-    nom = (X-X.min())*(x_max-x_min)
-    denom = X.max() - X.min()
-    denom = 1 if denom == 0 else denom
-    return x_min + nom/denom 
-
-def save_checkpoint(state, is_best, filename='checkpoint.pth'):
-    torch.save(state, filename)
-    if is_best:
-        shutil.copyfile(filename, 'model_best_{}.pth'.format(state['epoch']))
 
 if __name__ == '__main__':
     args = CreateArgsParser().parse_args()

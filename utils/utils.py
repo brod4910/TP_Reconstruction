@@ -31,5 +31,26 @@ def kfold_to_csv(folder_path, dest_folder, n_splits= 10):
         for i, n_class in enumerate(val_imgs):
             for img in n_class:
                 f.write('{}/{}\n'.format(i, img))
+                
+def to_pil_img(tensor):
+    pil = transforms.ToPILImage()
+    img = pil(tensor.squeeze())
+    return img
 
-kfold_to_csv('tpmnist_avg', 'data')
+def to_numpy_arr(tensor):
+    img = tensor.detach().numpy()
+    img = img.squeeze()
+    img_size = img.shape
+    img = img.reshape((img_size[1], img_size[2], img_size[0]))
+    return img
+
+def scale(X, x_min, x_max):
+    nom = (X-X.min())*(x_max-x_min)
+    denom = X.max() - X.min()
+    denom = 1 if denom == 0 else denom
+    return x_min + nom/denom 
+
+def save_checkpoint(state, is_best, filename='checkpoint.pth'):
+    torch.save(state, filename)
+    if is_best:
+        shutil.copyfile(filename, 'model_best_{}.pth'.format(state['epoch']))
