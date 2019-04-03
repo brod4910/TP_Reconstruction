@@ -3,7 +3,7 @@ val2017_gt/
 *.pc
 *.pyc
 *.pyo
-__pycache__
+__pycache__/
 tpmnist_avg/
 mnist_gt/
 pytorch_ssim/

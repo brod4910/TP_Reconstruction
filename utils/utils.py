@@ -1,6 +1,14 @@
+# python imports
 import os
+import shutil
+import configparser
+
+# library imports
 from sklearn.model_selection import KFold
 import numpy as np
+import torch
+from torchvision import transforms
+import torch.nn.functional as F
 
 def kfold_to_csv(folder_path, dest_folder, n_splits= 10):
     path = os.path.join(os.getcwd(), folder_path)
@@ -31,7 +39,153 @@ def kfold_to_csv(folder_path, dest_folder, n_splits= 10):
         for i, n_class in enumerate(val_imgs):
             for img in n_class:
                 f.write('{}/{}\n'.format(i, img))
-                
+
+def train(model, optimizer, criterion, device, train_loader, epoch, log_interval):
+    model.train()
+    optimizer.zero_grad()
+    total_train_loss = 0
+
+    total_train_loss = 0
+    for batch_idx, data in enumerate(train_loader):
+        inputs, targets = data['input'], data['label']
+        inputs, targets = inputs.to(device), targets.to(device)
+
+        output = model(inputs)                     # Forward pass
+        loss = criterion(output, targets)      # Compute loss function
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        total_train_loss += loss.item()
+
+        if (batch_idx + 1) % log_interval == 0:
+            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                epoch, batch_idx * len(inputs), len(train_loader.dataset),
+                100. * batch_idx / len(train_loader.dataset), loss.item()), flush= True)
+            print('outputs:', output, flush= True)
+
+        del inputs, targets, loss, output
+
+    print('\nAveraged loss for training epoch: {:.6f}'.format(total_train_loss/len(train_loader.dataset)))
+
+def test(model, device, val_loader, epoch, log_interval, loss_fn= 'mse'):
+    model.eval()
+
+    test_loss = 0
+    correct = 0
+
+    with torch.no_grad():
+        for batch_idx, data in enumerate(val_loader):
+            inputs, targets = data['input'], data['label']
+            inputs, targets = inputs.to(device), targets.to(device)
+
+            output = model(inputs)
+
+            if loss_fn == 'mse':
+                test_loss += F.mse_loss(output, targets).item()
+            elif loss_fn == 'ce':
+                test_loss += F.cross_entropy(output, targets).item()
+                pred = output.max(1, keepdim=True)[1]
+                correct += pred.eq(targets.view_as(pred)).sum().item()
+
+            if (batch_idx + 1) % log_interval == 0:
+                print('Test Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tCorrect: {}/{} ({:.6f})'.format(
+                epoch, batch_idx * len(inputs), len(val_loader.dataset),
+                100. * batch_idx / len(val_loader.dataset), test_loss, correct, 
+                len(val_loader.dataset), correct/len(val_loader.dataset)) , flush= True)
+                print('outputs:', output, flush= True)
+
+            del inputs, targets, output
+    print('\nTest set: Average loss: {:.6f}\n'.format(test_loss/len(val_loader)), flush= True)
+
+    return test_loss
+
+
+def predict(checkpoint_file, args):
+    use_cuda = torch.cuda.is_available()
+    device = torch.device("cuda" if use_cuda else "cpu")
+    checkpoint = torch.load(checkpoint_file, map_location=device)
+
+    # print(checkpoint)
+
+    unet = UNet(3, 1)
+    unet = unet.to(device)
+    unet.load_state_dict(checkpoint['model_state_dict'])
+    unet.eval()
+
+    transform = transforms.Compose([transforms.Resize((args.resize, args.resize)),
+            transforms.ToTensor()])
+
+    if args.pred_img:
+        img = Image.open(args.pred_img)
+        img = transform(img)
+        img = img.expand(1, -1, -1, -1)
+
+        output = unet(img)
+        img = to_pil_img(output)
+        plt.imshow(img)
+        plt.show()
+    else:
+        val_dataset = TransparentDataset.TransparentDataset(args.val_csv, args.val_input_dir, args.val_gt_dir, 500, input_transforms=transform, pred= 'yes')
+
+        val_loader = torch.utils.data.DataLoader(
+            val_dataset,
+            batch_size= args.batch_size, 
+            shuffle= True, 
+            num_workers= 2,
+            pin_memory= True
+            )
+        with torch.no_grad():
+            for batch_idx, (inputs, img_name) in enumerate(val_loader):
+                output = unet(inputs)
+                img = to_pil_img(output)
+
+                if batch_idx == 0:
+                    image = plt.imshow(img)
+                else:
+                    image.set_data(img)
+
+                plt.draw()
+                plt.pause(2)
+                print(batch_idx, img_name)
+
+def create_model(cfg):
+    config = configparser.ConfigParser()
+    config.read(cfg)
+
+    feature_layers = []
+    linear_layers = []
+    for section in config.sections():
+        kwargs = {}
+        if 'convolution' in section:
+            conv = config[section]
+            for param in conv:
+                if param not in ['activation', 'batch_norm']:
+                    kwargs[param] = int(conv[param])
+                elif param == 'activation':
+                    activation = torch.nn.ReLU(inplace= True)
+                elif param == 'batch_norm':
+                    batch_norm = conv[param]
+                    if batch_norm == '1':
+                        bnorm = torch.nn.BatchNorm2d(kwargs['out_channels'])
+            conv_layer = torch.nn.Conv2d(**kwargs)
+            feature_layers += [conv_layer, bnorm, activation]
+        elif 'maxpool' in section:
+            pool = config[section]
+            for param in pool:
+                kwargs[param] = int(pool[param])
+
+            feature_layers += [torch.nn.MaxPool2d(**kwargs)]
+        elif 'linear' in section:
+            linear = config[section]
+            # TODO: change from eval to another hand-written function
+            for param in linear:
+                kwargs[param] = eval(linear[param])
+
+            linear_layers += [torch.nn.Linear(**kwargs)]
+    return torch.nn.Sequential(*feature_layers), torch.nn.Sequential(*linear_layers)
+
 def to_pil_img(tensor):
     pil = transforms.ToPILImage()
     img = pil(tensor.squeeze())

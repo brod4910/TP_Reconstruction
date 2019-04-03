@@ -7,7 +7,7 @@ from PIL import Image
 
 '''
 '''
-class TransparentDataset(Dataset):
+class ReconstructionDataset(Dataset):
     def __init__(self, csv_file, input_dir, gt_dir, sample= None, input_transforms=None, label_transforms= None, pred= 'no'):
         self.csv_data = pd.read_csv(csv_file)
         if sample:
@@ -47,7 +47,7 @@ class TransparentDataset(Dataset):
             if label_transforms:
                 label = label_transforms(label)
             label = label.type(torch.FloatTensor)
-            return image, label, file_name
+            return {'input' : image, 'label' : label, 'img_name' : file_name}
         else:
-            return image, file_name
+            return {'input' : image, 'img_name' : file_name}
 

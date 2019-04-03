@@ -1,6 +1,6 @@
 import argparse
 
-def CreateArgsParser():
+def ArgsParserRecon():
     parser = argparse.ArgumentParser(description='Lensless Camera Pytorch')
 
     parser.add_argument('--epochs', type=int, default=40, metavar='N',
@@ -27,6 +27,31 @@ def CreateArgsParser():
                     help='path to validation ground truth images')
     parser.add_argument('--pred-img', default=None, metavar='N',
                     help='Path to image of prediction (default: None)')
+    parser.add_argument('--checkpoint', default=None, metavar='N',
+                    help='Path of the checkpoint file (default: None)')
+    return parser
+
+def ArgsParserClass():
+    parser = argparse.ArgumentParser(description='Lensless Camera Pytorch')
+
+    parser.add_argument('--epochs', type=int, default=40, metavar='N',
+                    help='number of epochs to train (default: 40)')
+    parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
+                    help='learning rate (default: 0.01)')
+    parser.add_argument('--batch-size', type=int, default=12, metavar='B',
+                    help='batch size (default: 12)')
+    parser.add_argument('--log-interval', type=int, default=500, metavar='N',
+                    help='how many batches to wait before logging training status')
+    parser.add_argument('--resize', required= True, type=int, default=None, 
+                    help='dimensions of both height and width to be resized')
+    parser.add_argument('--cfg-file', required= True,
+                    help='CSV file path for training images and labels')
+    parser.add_argument('--train-csv', required= True,
+                    help='CSV file path for training images and labels')
+    parser.add_argument('--val-csv', required= True,
+                    help='CSV file path for testing images and labels')
+    parser.add_argument('--root-dir', required= True,
+                    help='root directory of both the train and test folders')
     parser.add_argument('--checkpoint', default=None, metavar='N',
                     help='Path of the checkpoint file (default: None)')
     return parser
