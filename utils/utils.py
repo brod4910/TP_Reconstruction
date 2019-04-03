@@ -90,14 +90,14 @@ def test(model, device, val_loader, epoch, log_interval, loss_fn= 'mse'):
                 correct += pred.eq(targets.view_as(pred)).sum().item()
 
             if (batch_idx + 1) % log_interval == 0:
-                print('Test Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tCorrect: {}/{} ({:.6f})'.format(
+                print('Test Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(inputs), len(val_loader.dataset),
-                100. * batch_idx / len(val_loader.dataset), test_loss, correct, 
-                len(val_loader.dataset), correct/len(val_loader.dataset)) , flush= True)
+                100. * batch_idx / len(val_loader.dataset), test_loss) , flush= True)
                 print('outputs:', output, flush= True)
 
             del inputs, targets, output
-    print('\nTest set: Average loss: {:.6f}\n'.format(test_loss/len(val_loader)), flush= True)
+    print('\nTest set: Average loss: {:.6f}\tCorrect: {}/{} ({:.6f})\n'.format(test_loss/len(batch_idx+1), correct, 
+                len(val_loader.dataset), correct/len(val_loader.dataset)), flush= True)
 
     return test_loss
 
