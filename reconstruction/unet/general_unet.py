@@ -1,4 +1,4 @@
-from .unet_sections import *
+from utils.nn_blocks import *
 
 import torch
 
@@ -13,7 +13,7 @@ class GeneralUnet(nn.Module):
         filters = []
 
         for i, down_layer in enumerate(self.down_layers):
-            if isinstance(down_layer, DoubleConv) and i != len(self.down_layers) - 1:
+            if (isinstance(down_layer, DoubleConv) or isinstance(down_layer, ResidualBlock)) and i != len(self.down_layers) - 1:
                 d_filters = down_layer(x)
                 filters.append(d_filters)
                 x = d_filters.clone()
@@ -22,7 +22,7 @@ class GeneralUnet(nn.Module):
 
         i = len(filters) - 1
         for up_layer in self.up_layers:
-            if isinstance(up_layer, DoubleConv):
+            if isinstance(up_layer, DoubleConv) or isinstance(up_layer, ResidualBlock):
                 d_filters = filters[i]
                 x_size = x.size()
                 h, w = x_size[2], x_size[3]

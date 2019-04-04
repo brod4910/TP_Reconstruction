@@ -1,4 +1,4 @@
-from .unet_sections import *
+from utils.nn_blocks import *
 
 class UNet(nn.Module):
     def __init__(self, in_chans, out_chans):

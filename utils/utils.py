@@ -1,5 +1,5 @@
 # local imports
-from reconstruction.unet.unet_sections import *
+from .nn_blocks import *
 from reconstruction.unet.general_unet import GeneralUnet
 from data import ReconstructionDataset
 
@@ -17,6 +17,7 @@ import torch.nn.functional as F
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
+import cv2
 
 def kfold_to_csv(folder_path, dest_folder, n_splits= 10):
     path = os.path.join(os.getcwd(), folder_path)
@@ -150,20 +151,24 @@ def predict(checkpoint_file, args):
             for batch_idx, data in enumerate(val_loader):
                 inputs, target = data['input'].to(device), data['label'].to(device)
                 output = unet(inputs)
-                img = to_pil_img(output).convert('RGB')
+                output_img = to_pil_img(output).convert('RGB')
                 input_img = to_pil_img(inputs).convert('RGB')
                 label_img = to_pil_img(target).convert('RGB')
+                difference = difference_imgs(output_img, label_img)
                 if batch_idx == 0:
-                    sub1 = fig.add_subplot(1, 3, 1)
-                    sub2 = fig.add_subplot(1, 3, 2)
-                    sub3 = fig.add_subplot(1, 3, 3)
+                    sub1 = fig.add_subplot(1, 4, 1)
+                    sub2 = fig.add_subplot(1, 4, 2)
+                    sub3 = fig.add_subplot(1, 4, 3)
+                    sub4 = fig.add_subplot(1, 4, 4)
                     img1 = sub1.imshow(input_img)
-                    img2 = sub2.imshow(img)
+                    img2 = sub2.imshow(output_img)
                     img3 = sub3.imshow(label_img)
+                    img4 = sub4.imshow(difference)
                 else:
                     img1.set_data(input_img)
-                    img2.set_data(img)
+                    img2.set_data(output_img)
                     img3.set_data(label_img)
+                    img4.set_data(difference)
 
                 plt.draw()
                 plt.pause(2)
@@ -233,6 +238,11 @@ def create_unet(cfg):
                 for param in pool:
                     kwargs[param] = int(pool[param])
                 down_layers += [MaxPool(**kwargs)]
+            elif 'residual' in section:
+                residual = config[section]
+                for param in residual:
+                    kwargs[param] = int(residual[param])
+                down_layers += [ResidualBlock(**kwargs)]
         elif curr_section == 'up_layers':
             if 'down' in section:
                 down = config[section]
@@ -252,6 +262,11 @@ def create_unet(cfg):
                     except Exception as e:
                         kwargs[param] = single[param]
                 up_layers += [SingleConv(**kwargs)]
+            elif 'residual' in section:
+                residual = config[section]
+                for param in residual:
+                    kwargs[param] = int(residual[param])
+                up_layers += [ResidualBlock(**kwargs)]
 
     return down_layers, up_layers
 
@@ -276,3 +291,13 @@ def save_checkpoint(state, is_best, filename='checkpoint.pth'):
     torch.save(state, filename)
     if is_best:
         shutil.copyfile(filename, 'model_best_{}.pth'.format(state['epoch']))
+
+def difference_imgs(img1, img2):
+    img1_cv = np.array(img1)
+    img2_cv = np.array(img2)
+    difference = np.abs(img2_cv - img1_cv)
+
+    return difference
+
+
+
