@@ -1,5 +1,7 @@
 # local imports
 from reconstruction.unet.unet_sections import *
+from reconstruction.unet.general_unet import GeneralUnet
+from data import ReconstructionDataset
 
 # python imports
 import os
@@ -12,6 +14,9 @@ import numpy as np
 import torch
 from torchvision import transforms
 import torch.nn.functional as F
+import matplotlib
+matplotlib.use('TkAgg')
+import matplotlib.pyplot as plt
 
 def kfold_to_csv(folder_path, dest_folder, n_splits= 10):
     path = os.path.join(os.getcwd(), folder_path)
@@ -112,7 +117,8 @@ def predict(checkpoint_file, args):
 
     # print(checkpoint)
 
-    unet = UNet(3, 1)
+    down_layers, up_layers = create_unet(args.cfg_file)
+    unet = GeneralUnet(down_layers, up_layers)
     unet = unet.to(device)
     unet.load_state_dict(checkpoint['model_state_dict'])
     unet.eval()
@@ -126,11 +132,11 @@ def predict(checkpoint_file, args):
         img = img.expand(1, -1, -1, -1)
 
         output = unet(img)
-        img = to_pil_img(output)
+        img = to_pil_img(output).convert('RGB')
         plt.imshow(img)
         plt.show()
     else:
-        val_dataset = TransparentDataset.TransparentDataset(args.val_csv, args.val_input_dir, args.val_gt_dir, 500, input_transforms=transform, pred= 'yes')
+        val_dataset = ReconstructionDataset.ReconstructionDataset(args.val_csv, args.val_input_dir, args.val_gt_dir, 500, input_transforms= transform, label_transforms= transform)
 
         val_loader = torch.utils.data.DataLoader(
             val_dataset,
@@ -139,19 +145,29 @@ def predict(checkpoint_file, args):
             num_workers= 2,
             pin_memory= True
             )
+        fig = plt.figure()
         with torch.no_grad():
-            for batch_idx, (inputs, img_name) in enumerate(val_loader):
+            for batch_idx, data in enumerate(val_loader):
+                inputs, target = data['input'].to(device), data['label'].to(device)
                 output = unet(inputs)
-                img = to_pil_img(output)
-
+                img = to_pil_img(output).convert('RGB')
+                input_img = to_pil_img(inputs).convert('RGB')
+                label_img = to_pil_img(target).convert('RGB')
                 if batch_idx == 0:
-                    image = plt.imshow(img)
+                    sub1 = fig.add_subplot(1, 3, 1)
+                    sub2 = fig.add_subplot(1, 3, 2)
+                    sub3 = fig.add_subplot(1, 3, 3)
+                    img1 = sub1.imshow(input_img)
+                    img2 = sub2.imshow(img)
+                    img3 = sub3.imshow(label_img)
                 else:
-                    image.set_data(img)
+                    img1.set_data(input_img)
+                    img2.set_data(img)
+                    img3.set_data(label_img)
 
                 plt.draw()
                 plt.pause(2)
-                print(batch_idx, img_name)
+                # print(batch_idx, img_name)
 
 def create_model(cfg):
     config = configparser.ConfigParser()
@@ -239,14 +255,13 @@ def create_unet(cfg):
 
     return down_layers, up_layers
 
-def to_pil_img(tensor):
+def to_pil_img(tensor, axis= 0):
     pil = transforms.ToPILImage()
-    img = pil(tensor.squeeze())
+    img = pil(tensor.squeeze(axis))
     return img
 
-def to_numpy_arr(tensor):
-    img = tensor.detach().numpy()
-    img = img.squeeze()
+def to_numpy_arr(tensor, axis= 0):
+    img = tensor.detach().squeeze(axis).numpy()
     img_size = img.shape
     img = img.reshape((img_size[1], img_size[2], img_size[0]))
     return img
