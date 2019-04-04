@@ -8,3 +8,4 @@ tpmnist_avg/
 mnist_gt/
 pytorch_ssim/
 tp_cifar_avg/
+*.pth
