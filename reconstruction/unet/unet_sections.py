@@ -18,9 +18,12 @@ class SingleConv(nn.Module):
         if activation == 'relu':
             self.layer = nn.Sequential(nn.Conv2d(in_channels= in_chans, out_channels= out_chans, kernel_size= kernel, padding= padding), 
                 nn.BatchNorm2d(out_chans), nn.ReLU(inplace= True))
-        if activation == 'sigmoid':
+        elif activation == 'sigmoid':
             self.layer = nn.Sequential(nn.Conv2d(in_channels= in_chans, out_channels= out_chans, kernel_size= kernel, padding= padding), 
                 nn.BatchNorm2d(out_chans), nn.Sigmoid())
+        elif activation == 'none':
+            self.layer = nn.Sequential(nn.Conv2d(in_channels= in_chans, out_channels= out_chans, kernel_size= kernel, padding= padding), 
+                nn.BatchNorm2d(out_chans))
 
     def forward(self, inputs):
         y = self.layer(inputs)
@@ -39,7 +42,7 @@ class TransposeConv(nn.Module):
     def __init__(self, in_chans, out_chans, kernel= (2, 2), stride= 2):
         super(TransposeConv, self).__init__()
         self.layers = nn.Sequential(nn.ConvTranspose2d(in_channels= in_chans, out_channels= out_chans, 
-                kernel_size= kernel, stride= stride), nn.BatchNorm2d(out_chans), nn.ReLU(inplace= True))
+                kernel_size= kernel, stride= stride), nn.BatchNorm2d(out_chans))
 
     def forward(self, inputs):
         y = self.layers(inputs)
