@@ -25,9 +25,9 @@ def kfold_to_csv(folder_path, dest_folder, n_splits= 10):
     kf = KFold(n_splits= n_splits, shuffle= True, random_state= 1)
     kfolds = []
     list.sort(dirs)
-    print(dirs)
     for directory in dirs:
         img_names = np.array([name for name in os.listdir(directory)])
+        print(len(img_names))
         kfolds.append(kf.split(img_names))
 
     train_imgs = []
@@ -37,7 +37,10 @@ def kfold_to_csv(folder_path, dest_folder, n_splits= 10):
         for train_idx, val_idx in fold:
             train_imgs.append(img_names[train_idx])
             val_imgs.append(img_names[val_idx])
+            print('Number of train imgs: ', len(img_names[train_idx]))
+            print('Number of val imgs: ', len(img_names[val_idx]))
             break
+
 
     with open(os.path.join(dest_folder, 'mnist_train.csv'), 'w') as f:
         for i, n_class in enumerate(train_imgs):
@@ -181,33 +184,24 @@ def create_model(cfg):
     feature_layers = []
     linear_layers = []
     for section in config.sections():
-        kwargs = {}
         if 'convolution' in section:
-            conv = config[section]
-            for param in conv:
-                if param not in ['activation', 'batch_norm']:
-                    kwargs[param] = int(conv[param])
-                elif param == 'activation':
-                    activation = torch.nn.ReLU(inplace= True)
-                elif param == 'batch_norm':
-                    batch_norm = conv[param]
-                    if batch_norm == '1':
-                        bnorm = torch.nn.BatchNorm2d(kwargs['out_channels'])
-            conv_layer = torch.nn.Conv2d(**kwargs)
-            feature_layers += [conv_layer, bnorm, activation]
+            kwargs = get_params(config[section])
+            feature_layers += [SingleConv(**kwargs)]
         elif 'maxpool' in section:
-            pool = config[section]
-            for param in pool:
-                kwargs[param] = int(pool[param])
-
-            feature_layers += [torch.nn.MaxPool2d(**kwargs)]
+            kwargs = get_params(config[section])
+            feature_layers += [MaxPool(**kwargs)]
+        elif 'residual' in section:
+            kwargs = get_params(config[section])
+            feature_layers += [ResidualBlock(**kwargs)]
         elif 'linear' in section:
+            kwargs = {}
             linear = config[section]
             # TODO: change from eval to another hand-written function
             for param in linear:
                 kwargs[param] = eval(linear[param])
 
             linear_layers += [torch.nn.Linear(**kwargs)]
+
     return torch.nn.Sequential(*feature_layers), torch.nn.Sequential(*linear_layers)
 
 def create_unet(cfg):
@@ -218,7 +212,6 @@ def create_unet(cfg):
     up_layers = []
 
     for section in config.sections():
-        kwargs = {}
         if section == 'down_layers':
             curr_section = section
             continue
@@ -228,45 +221,27 @@ def create_unet(cfg):
 
         if curr_section == 'down_layers':
             if 'down' in section:
-                down = config[section]
-                for param in down:
-                    kwargs[param] = int(down[param])
-                print(kwargs)
+                kwargs = get_params(config[section])
                 down_layers += [DoubleConv(**kwargs)]
             elif 'maxpool' in section:
-                pool = config[section]
-                for param in pool:
-                    kwargs[param] = int(pool[param])
+                kwargs = get_params(config[section])
                 down_layers += [MaxPool(**kwargs)]
             elif 'residual' in section:
-                residual = config[section]
-                for param in residual:
-                    kwargs[param] = int(residual[param])
+                kwargs = get_params(config[section])
                 down_layers += [ResidualBlock(**kwargs)]
         elif curr_section == 'up_layers':
             if 'down' in section:
-                down = config[section]
-                for param in down:
-                    kwargs[param] = int(down[param])
+                kwargs = get_params(config[section])
                 up_layers += [DoubleConv(**kwargs)]
             elif 'up' in section:
-                up = config[section]
-                for param in up:
-                    kwargs[param] = int(up[param])
+                kwargs = get_params(config[section])
                 up_layers += [TransposeConv(**kwargs)]
             elif 'singleconv' in section:
-                single = config[section]
-                for param in single:
-                    try:
-                        kwargs[param] = int(single[param])
-                    except Exception as e:
-                        kwargs[param] = single[param]
+                kwargs = get_params(config[section])
                 up_layers += [SingleConv(**kwargs)]
-            elif 'residual' in section:
-                residual = config[section]
-                for param in residual:
-                    kwargs[param] = int(residual[param])
-                up_layers += [ResidualBlock(**kwargs)]
+            # elif 'residual' in section:
+            #     residual = config[section]
+            #     kwargs = get_params(residual)
 
     return down_layers, up_layers
 
@@ -299,5 +274,12 @@ def difference_imgs(img1, img2):
 
     return difference
 
+def get_params(params):
+    kwargs = {}
+    for param in params:
+        try:
+            kwargs[param] = int(params[param])
+        except Exception as e:
+            kwargs[param] = params[param]
 
-
+    return kwargs

@@ -49,6 +49,16 @@ class TransposeConv(nn.Module):
         y = self.layers(inputs)
         return y
 
+class PreActivConv(nn.Module):
+    def __init__(self, in_chans, out_chans, kernel, padding):
+        super(PreActivConv, self).__init__()
+        self.layers = nn.Sequential(nn.BatchNorm2d(in_chans), nn.ReLU(inplace= True),
+            nn.Conv2d(in_channels= in_chans, out_channels= out_chans, kernel_size= kernel, padding= padding))
+
+    def forward(self, inputs):
+        y = self.layers(inputs)
+        return y
+
 class ResidualBlock(nn.Module):
     def __init__(self, in_chans, out_chans, kernel= (3, 3), padding= 1, activation= 'relu'):
         super(ResidualBlock, self).__init__()
@@ -62,6 +72,20 @@ class ResidualBlock(nn.Module):
 
         x = torch.cat((x, inputs), 1)
         x = self.relu(x)
+
+        return x
+
+class FullPreResBlock(nn.Module):
+    def __init__(self, in_chans, out_chans, kernel= (3, 3), padding= 1):
+        super(FullPreResBlock, self).__init__()
+        self.conv1 = PreActivConv(in_chans, out_chans, kernel= kernel, padding= padding)
+        self.conv2 = PreActivConv(in_chans, out_chans, kernel= kernel, padding= padding)
+
+    def forward(self, inputs):
+        x = self.conv1(inputs)
+        x = self.conv2(x)
+
+        x = torch.cat((x, inputs), 1)
 
         return x
 
