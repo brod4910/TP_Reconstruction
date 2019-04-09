@@ -79,7 +79,7 @@ class FullPreResBlock(nn.Module):
     def __init__(self, in_chans, out_chans, kernel= (3, 3), padding= 1):
         super(FullPreResBlock, self).__init__()
         self.conv1 = PreActivConv(in_chans, out_chans, kernel= kernel, padding= padding)
-        self.conv2 = PreActivConv(in_chans, out_chans, kernel= kernel, padding= padding)
+        self.conv2 = PreActivConv(out_chans, out_chans, kernel= kernel, padding= padding)
 
     def forward(self, inputs):
         x = self.conv1(inputs)

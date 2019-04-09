@@ -10,7 +10,7 @@ from PIL import Image
 class ReconstructionDataset(Dataset):
     def __init__(self, csv_file, input_dir, gt_dir, sample= None, input_transforms=None, label_transforms= None):
         self.csv_data = pd.read_csv(csv_file)
-        if sample:
+        if sample is not None:
             self.csv_data = self.csv_data.sample(n= sample)
         self.input_dir = input_dir
         self.gt_dir = gt_dir

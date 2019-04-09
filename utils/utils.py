@@ -140,6 +140,7 @@ def predict(checkpoint_file, args):
         plt.imshow(img)
         plt.show()
     else:
+        display_imgs = []
         val_dataset = ReconstructionDataset.ReconstructionDataset(args.val_csv, args.val_input_dir, args.val_gt_dir, 500, input_transforms= transform, label_transforms= transform)
 
         val_loader = torch.utils.data.DataLoader(
@@ -149,7 +150,10 @@ def predict(checkpoint_file, args):
             num_workers= 2,
             pin_memory= True
             )
-        fig = plt.figure()
+        fig = plt.figure(figsize= (16,9))
+        plt.box(False)
+        plt.tick_params(axis='both', which='both', bottom=False, top=False, labelbottom=False, right=False, left=False, labelleft=False)
+        fig.tight_layout()
         with torch.no_grad():
             for batch_idx, data in enumerate(val_loader):
                 inputs, target = data['input'].to(device), data['label'].to(device)
@@ -158,11 +162,32 @@ def predict(checkpoint_file, args):
                 input_img = to_pil_img(inputs).convert('RGB')
                 label_img = to_pil_img(target).convert('RGB')
                 difference = difference_imgs(output_img, label_img)
+                # display_imgs.append([output_img, input_img,label_img, difference])
+
+                # if len(display_imgs) % 4 == 0:
+                #     if batch_idx + 1 == 4:
+                #         sub_figs = []
+                #         for i, imgs in enumerate(display_imgs):
+                #             sub_fig = []
+                #             for j, img in enumerate(imgs):
+                #                 sub_fig.append(fig.add_subplot(i + 1, 4, j + 1).imshow(img))
+                #             sub_figs.append(sub_fig)
+                #     else:
+                #         for (imgs, sub_fig) in zip(display_imgs, sub_figs):
+                #             for (img, fig) in zip(imgs, sub_fig):
+                #                 fig.set_data(img)
+
+                #     plt.draw()
+                #     plt.pause(2)
+
+                #     display_imgs = []
+                            
                 if batch_idx == 0:
                     sub1 = fig.add_subplot(1, 4, 1)
                     sub2 = fig.add_subplot(1, 4, 2)
                     sub3 = fig.add_subplot(1, 4, 3)
                     sub4 = fig.add_subplot(1, 4, 4)
+                    remove_ticks([sub1, sub2, sub3, sub4])
                     img1 = sub1.imshow(input_img)
                     img2 = sub2.imshow(output_img)
                     img3 = sub3.imshow(label_img)
@@ -229,6 +254,9 @@ def create_unet(cfg):
             elif 'residual' in section:
                 kwargs = get_params(config[section])
                 down_layers += [ResidualBlock(**kwargs)]
+            elif 'preres' in section:
+                kwargs = get_params(config[section])
+                down_layers += [FullPreResBlock(**kwargs)]
         elif curr_section == 'up_layers':
             if 'down' in section:
                 kwargs = get_params(config[section])
@@ -283,3 +311,12 @@ def get_params(params):
             kwargs[param] = params[param]
 
     return kwargs
+
+def remove_ticks(figs):
+    if isinstance(figs, list):
+        for fig in figs:
+            fig.set_xticks([])
+            fig.set_yticks([])
+    else:
+        figs.set_xticks([])
+        figs.set_yticks([])

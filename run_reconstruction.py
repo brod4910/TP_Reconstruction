@@ -10,7 +10,8 @@ import torch
 from torchvision import transforms
 from PIL import Image
 import numpy as np
-np.set_printoptions(threshold=np.inf)
+# np.set_printoptions(threshold=np.inf)
+# torch.set_printoptions(threshold= 128*128+1)
 
 def main(args):
     use_cuda = torch.cuda.is_available()
@@ -46,14 +47,16 @@ def main(args):
     pin_memory= True
     )
 
-    # optimizer = torch.optim.Adam(unet.parameters(), lr=0.1, betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
-    optimizer = torch.optim.SGD(unet.parameters(), lr= .001, momentum=.9, weight_decay= 0)
+    # optimizer = torch.optim.Adam(unet.parameters(), lr=0.5, betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
+    optimizer = torch.optim.SGD(unet.parameters(), lr= .05, momentum=.9, weight_decay= 0)
     criterion = torch.nn.MSELoss().to(device)
-    # criterion = pytorch_ssim.SSIM()
+
+    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[5,10,15,20,25,30,35])
 
     best_loss = float('inf')
 
     for epoch in range(1, args.epochs + 1):
+        scheduler.step()
         train(unet, optimizer, criterion, device, train_loader, epoch, args.log_interval)
         test_loss = test(unet, device, val_loader, epoch, args.log_interval)
 
