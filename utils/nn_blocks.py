@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torchvision.models.densenet import _DenseBlock, _Transition
 
 class DoubleConv(nn.Module):
     def __init__(self, in_chans, out_chans, kernel= (3, 3), padding= 0):
@@ -16,6 +17,7 @@ class SingleConv(nn.Module):
         super(SingleConv, self).__init__()
         self.in_chans = in_chans
         self.out_chans = out_chans
+
         if activation == 'relu':
             self.layer = nn.Sequential(nn.Conv2d(in_channels= in_chans, out_channels= out_chans, kernel_size= kernel, padding= padding), 
                 nn.BatchNorm2d(out_chans), nn.ReLU(inplace= True))
@@ -23,17 +25,16 @@ class SingleConv(nn.Module):
             self.layer = nn.Sequential(nn.Conv2d(in_channels= in_chans, out_channels= out_chans, kernel_size= kernel, padding= padding), 
                 nn.BatchNorm2d(out_chans), nn.Sigmoid())
         elif activation == 'none':
-            self.layer = nn.Sequential(nn.Conv2d(in_channels= in_chans, out_channels= out_chans, kernel_size= kernel, padding= padding), 
-                nn.BatchNorm2d(out_chans))
+            self.layer = nn.Sequential(nn.Conv2d(in_channels= in_chans, out_channels= out_chans, kernel_size= kernel, padding= padding))
 
     def forward(self, inputs):
         y = self.layer(inputs)
         return y
 
 class MaxPool(nn.Module):
-    def __init__(self, kernel=(2, 2), stride= 2):
+    def __init__(self, kernel=(2, 2), stride= 2, padding= 0):
         super(MaxPool, self).__init__()
-        self.layer = nn.MaxPool2d(kernel_size= kernel, stride= stride)
+        self.layer = nn.MaxPool2d(kernel_size= kernel, stride= stride, padding= padding)
 
     def forward(self, inputs):
         y = self.layer(inputs)
@@ -89,5 +90,24 @@ class FullPreResBlock(nn.Module):
 
         return x
 
+class DenseBlock(nn.Module):
+    def __init__(self, num_layers= 4, in_chans= 64, bn_size= 4, growth_rate= 32, drop_rate= 0):
+        super(DenseBlock, self).__init__()
+        self.block = _DenseBlock(num_layers= num_layers, num_input_features= in_chans, bn_size= bn_size, growth_rate= growth_rate, drop_rate= drop_rate)
+
+    def forward(self, x):
+        out = self.block(x)
+        print(out.size())
+        return x
+
+class TransitionBlock(nn.Module):
+    def __init__(self, num_input_features= 16, num_output_features= 32):
+        super(TransitionBlock, self).__init__()
+        self.block = _Transition(num_input_features= num_input_features, num_output_features= num_output_features)
+
+    def forward(self, x):
+        out = self.block(x)
+        print(out.size())
+        return out
 
 

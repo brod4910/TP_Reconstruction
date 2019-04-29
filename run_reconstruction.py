@@ -87,5 +87,5 @@ if __name__ == '__main__':
 # python main.py --resize 572 --train-csv ./data/train_data.csv --val-csv ./data/val_data.csv --train-input-dir /scratch/kingspeak/serial/u0853593/images/reconstruction/train2017 --train-gt-dir /scratch/kingspeak/serial/u0853593/images/reconstruction/train2017_gt --val-input-dir /scratch/kingspeak/serial/u0853593/images/reconstruction/val2017 --val-gt-dir /scratch/kingspeak/serial/u0853593/images/reconstruction/val2017_gt --log-interval 500
 # python run_reconstruction.py --resize 128 --train-csv data/csv_files/mnist_train.csv --val-csv data/csv_files/mnist_val.csv --train-input-dir data/tpmnist_avg --train-gt-dir data/mnist_gt --log-interval 500 --cfg-file reconstruction/models/model1.cfg --checkpoint model_best_5.pth
 # python main.py --resize 572 --pred-img ./tpmnist_avg/0/13238.jpg --checkpoint ./model_best_1.pth
-
+# python run_reconstruction.py --resize 128 --train-csv data/csv_files/cifar_recon_train.csv --val-csv data/csv_files/cifar_recon_val.csv --train-input-dir data/tp_cifar_avg --train-gt-dir data/cifar --log-interval 500 --cfg-file reconstruction/models/model4.cfg --checkpoint model4_cifar_best_20.pth
 

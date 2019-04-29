@@ -62,4 +62,4 @@ if __name__ == '__main__':
     args = ArgsParserClass().parse_args()
     main(args)
 
-# python run_classification.py --lr .001 --resize 224 --cfg-file classification/models/model2.cfg --root-dir data/tp_cifar_avg --train-csv data/csv_files/cifar_train.csv --val-csv data/csv_files/cifar_test.csv
+# python run_classification.py --lr .001 --resize 224 --cfg-file classification/models/model3.cfg --root-dir data/tp_cifar_avg --train-csv data/csv_files/cifar_train.csv --val-csv data/csv_files/cifar_test.csv

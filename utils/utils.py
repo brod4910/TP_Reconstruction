@@ -19,15 +19,21 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import cv2
 
-def kfold_to_csv(folder_path, dest_folder, n_splits= 10):
+def kfold_to_csv(folder_path, dest_folder, file_name, n_splits= 10):
     path = os.path.join(os.getcwd(), folder_path)
     dirs = [os.path.join(path, directory) for directory in os.listdir(path) if os.path.isdir(os.path.join(path, directory))]
     kf = KFold(n_splits= n_splits, shuffle= True, random_state= 1)
     kfolds = []
-    list.sort(dirs)
-    for directory in dirs:
-        img_names = np.array([name for name in os.listdir(directory)])
-        print(len(img_names))
+    if dirs:
+        list.sort(dirs)
+        for directory in dirs:
+            img_names = np.array([name for name in os.listdir(directory)])
+            print(len(img_names))
+            kfolds.append(kf.split(img_names))
+    else:
+        img_names = np.array([name for name in os.listdir(path)])
+        dirs = [path]
+        # print(img_names)
         kfolds.append(kf.split(img_names))
 
     train_imgs = []
@@ -35,6 +41,7 @@ def kfold_to_csv(folder_path, dest_folder, n_splits= 10):
     for fold, directory in zip(kfolds, dirs):
         img_names = np.array([name for name in os.listdir(directory)])
         for train_idx, val_idx in fold:
+            print(img_names.shape, train_idx.shape)
             train_imgs.append(img_names[train_idx])
             val_imgs.append(img_names[val_idx])
             print('Number of train imgs: ', len(img_names[train_idx]))
@@ -42,15 +49,15 @@ def kfold_to_csv(folder_path, dest_folder, n_splits= 10):
             break
 
 
-    with open(os.path.join(dest_folder, 'mnist_train.csv'), 'w') as f:
+    with open(os.path.join(dest_folder, '{}_train.csv'.format(file_name)), 'w') as f:
         for i, n_class in enumerate(train_imgs):
             for img in n_class:
-                f.write('{}/{}\n'.format(i, img))
+                f.write('{}\n'.format(img))
 
-    with open(os.path.join(dest_folder, 'mnist_val.csv'), 'w') as f:
+    with open(os.path.join(dest_folder, '{}_val.csv'.format(file_name)), 'w') as f:
         for i, n_class in enumerate(val_imgs):
             for img in n_class:
-                f.write('{}/{}\n'.format(i, img))
+                f.write('{}\n'.format(img))
 
 def train(model, optimizer, criterion, device, train_loader, epoch, log_interval):
     model.train()
@@ -199,6 +206,7 @@ def predict(checkpoint_file, args):
                     img4.set_data(difference)
 
                 plt.draw()
+                # plt.savefig('fig_{}'.format(batch_idx))
                 plt.pause(2)
                 # print(batch_idx, img_name)
 
@@ -218,6 +226,12 @@ def create_model(cfg):
         elif 'residual' in section:
             kwargs = get_params(config[section])
             feature_layers += [ResidualBlock(**kwargs)]
+        elif 'dense' in section:
+            kwargs = get_params(config[section])
+            feature_layers += [DenseBlock(**kwargs)]
+        elif 'transition' in section:
+            kwargs = get_params(config[section])
+            feature_layers += [TransitionBlock(**kwargs)]
         elif 'linear' in section:
             kwargs = {}
             linear = config[section]
@@ -244,28 +258,24 @@ def create_unet(cfg):
             curr_section = section
             continue
 
+        kwargs = get_params(config[section])
         if curr_section == 'down_layers':
             if 'down' in section:
-                kwargs = get_params(config[section])
                 down_layers += [DoubleConv(**kwargs)]
             elif 'maxpool' in section:
-                kwargs = get_params(config[section])
                 down_layers += [MaxPool(**kwargs)]
             elif 'residual' in section:
-                kwargs = get_params(config[section])
                 down_layers += [ResidualBlock(**kwargs)]
             elif 'preres' in section:
-                kwargs = get_params(config[section])
                 down_layers += [FullPreResBlock(**kwargs)]
+            elif 'dense' in section:
+                down_layers += [DenseBlock(**kwargs)]
         elif curr_section == 'up_layers':
             if 'down' in section:
-                kwargs = get_params(config[section])
                 up_layers += [DoubleConv(**kwargs)]
             elif 'up' in section:
-                kwargs = get_params(config[section])
                 up_layers += [TransposeConv(**kwargs)]
             elif 'singleconv' in section:
-                kwargs = get_params(config[section])
                 up_layers += [SingleConv(**kwargs)]
             # elif 'residual' in section:
             #     residual = config[section]

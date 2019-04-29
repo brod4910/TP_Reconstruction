@@ -9,3 +9,9 @@ mnist_gt/
 pytorch_ssim/
 tp_cifar_avg/
 *.pth
+cifar/
+color_emnist/
+tp_mnist_color_avg/
+test.py
+emnist/
+tp_emnist_avg/
