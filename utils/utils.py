@@ -270,6 +270,8 @@ def create_unet(cfg):
                 down_layers += [FullPreResBlock(**kwargs)]
             elif 'dense' in section:
                 down_layers += [DenseBlock(**kwargs)]
+            elif 'singleconv' in section:
+                down_layers += [SingleConv(**kwargs)]
         elif curr_section == 'up_layers':
             if 'down' in section:
                 up_layers += [DoubleConv(**kwargs)]
